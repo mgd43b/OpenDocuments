@@ -781,6 +781,7 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<AppContext
       's3': '@opendocuments/connector-s3',
       'gcs': '@opendocuments/connector-s3',
       'confluence': '@opendocuments/connector-confluence',
+      'slack': '@opendocuments/connector-slack',
       'swagger': '@opendocuments/connector-swagger',
       'openapi': '@opendocuments/connector-swagger',
     }

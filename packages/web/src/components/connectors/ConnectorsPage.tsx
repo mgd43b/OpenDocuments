@@ -25,7 +25,7 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${tone}`}>{status}</span>
 }
 
-type ConfigurableConnectorType = 'notion' | 'gdrive' | 's3' | 'confluence' | 'swagger' | 'web-crawler'
+type ConfigurableConnectorType = 'notion' | 'gdrive' | 's3' | 'confluence' | 'slack' | 'swagger' | 'web-crawler'
 
 interface ConnectorField {
   key: string
@@ -57,6 +57,10 @@ const CONNECTOR_FIELDS: Record<ConfigurableConnectorType, ConnectorField[]> = {
     { key: 'email', required: true },
     { key: 'token', required: true, secret: true },
     { key: 'spaceKey' },
+  ],
+  slack: [
+    { key: 'token', required: true, secret: true },
+    { key: 'channels', multiline: true },
   ],
   swagger: [
     { key: 'url', required: true },
@@ -163,8 +167,8 @@ export function ConnectorsPage() {
       for (const field of fields) {
         const value = fieldValue(field).trim()
         if (!value) continue
-        if (field.key === 'urls') {
-          config.urls = value.split(/\r?\n/).map((url) => url.trim()).filter(Boolean)
+        if (field.key === 'urls' || field.key === 'channels') {
+          config[field.key] = value.split(/\r?\n/).map((entry) => entry.trim()).filter(Boolean)
         } else if (field.key === 'depth') {
           config.depth = Math.max(0, Number.parseInt(value, 10) || 0)
         } else {

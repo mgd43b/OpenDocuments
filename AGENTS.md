@@ -23,10 +23,10 @@ packages/          # 핵심 패키지 (5개)
   web/             # React SPA (Vite + Tailwind) - private, npm 배포 안 함
   client/          # TypeScript SDK (@opendocuments/client)
 
-plugins/           # 플러그인 (21개)
+plugins/           # 플러그인 (22개)
   model-*/         # 5개: ollama, openai, anthropic, google, grok
-  parser-*/        # 9개: pdf, docx, xlsx, html, jupyter, email, code, pptx
-  connector-*/     # 8개: github, notion, gdrive, s3, confluence, swagger, web-crawler, web-search
+  parser-*/        # 8개: pdf, docx, xlsx, html, jupyter, email, code, pptx
+  connector-*/     # 9개: github, notion, gdrive, s3, confluence, slack, swagger, web-crawler, web-search
 
 docs-site/         # VitePress 문서 사이트 (GitHub Pages 자동 배포)
 ```
@@ -38,7 +38,7 @@ docs-site/         # VitePress 문서 사이트 (GitHub Pages 자동 배포)
 ```bash
 npm run setup          # install + build (처음 클론 시)
 npm run build          # turbo build (전체)
-npm run test           # turbo test (51 tasks, ~648 tests)
+npm run test           # turbo test (53 tasks, ~666 tests)
 npm run dev            # watch mode (전체)
 npm run typecheck      # turbo typecheck
 
@@ -177,7 +177,7 @@ docs: update README with use cases
 - [ ] feature 브랜치의 모든 작업이 완료되었는지 확인
 - [ ] `npm run build` 성공 확인
 - [ ] `npm run typecheck` 성공 확인
-- [ ] `npm run test` 전체 통과 확인 (51 tasks, ~648 tests)
+- [ ] `npm run test` 전체 통과 확인 (53 tasks, ~666 tests)
 
 ### Phase 2: 코드 리뷰 (3회 반복)
 

@@ -13,6 +13,7 @@ const CONFIGURABLE_CONNECTOR_TYPES = new Set([
   'gdrive',
   's3',
   'confluence',
+  'slack',
   'swagger',
   'web-crawler',
 ])

@@ -28,7 +28,7 @@ features:
   - icon:
       src: /icons/plugin.svg
     title: Plugin Ecosystem
-    details: 21 installable packages — 8 parsers (PDF, DOCX, code, Jupyter), 8 connectors (GitHub, Notion, Drive), and 5 AI model providers.
+    details: 22 installable packages — 8 parsers (PDF, DOCX, code, Jupyter), 9 connectors (GitHub, Notion, Drive, Slack), and 5 AI model providers.
   - icon:
       src: /icons/robot.svg
     title: MCP Server for AI Coding

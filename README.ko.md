@@ -302,6 +302,7 @@ parserFallbacks: {
 | **Google Drive**                     | Docs, Sheets, Slides, 업로드 파일         | OAuth / Service Account    | Polling              |
 | **Amazon S3 / Google Cloud Storage** | 버킷의 모든 지원 형식                     | AWS / GCP credentials      | Polling              |
 | **Confluence**                       | 스페이스 전체 Wiki 페이지                 | API Token + Email          | Polling              |
+| **Slack**                            | 공개 채널 메시지와 스레드 답글            | Bot Token                  | Polling              |
 | **Swagger / OpenAPI**                | 파라미터와 스키마가 포함된 API 엔드포인트 | 없음(공개 스펙)            | 수동                 |
 | **Web Crawler**                      | 등록한 모든 URL                           | 선택 사항(cookies/headers) | 주기적               |
 | **Web Search (Tavily)**              | 답변에 병합되는 실시간 웹 결과            | Tavily API Key             | Query-time           |
@@ -635,7 +636,7 @@ npm run dev      # Watch mode
 | `@opendocuments/client` | TypeScript SDK                                                         | 5      |
 | 5개 모델 플러그인       | Ollama, OpenAI, Anthropic, Google, Grok                                | 40     |
 | 8개 파서 플러그인       | PDF, DOCX, XLSX, HTML, Jupyter, Email, Code, PPTX                      | 40     |
-| 8개 커넥터 플러그인     | GitHub, Notion, GDrive, S3, Confluence, Swagger, WebCrawler, WebSearch | 42     |
+| 9개 커넥터 플러그인     | GitHub, Notion, GDrive, S3, Confluence, Slack, Swagger, WebCrawler, WebSearch | 60     |
 
 규칙, 테스트 패턴, 플러그인 개발 가이드는 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
 
@@ -676,7 +677,7 @@ OpenDocuments는 회사 문서 위에 비공개 AI 검색 엔진을 구축하는
 
 ### 어떤 데이터 소스를 지원하나요?
 
-OpenDocuments는 로컬 파일, 파일 업로드, GitHub, Notion, Google Drive, Amazon S3, Google Cloud Storage, Confluence, Swagger/OpenAPI 스펙, 등록된 웹 페이지, Tavily 기반 웹 검색을 지원합니다.
+OpenDocuments는 로컬 파일, 파일 업로드, GitHub, Notion, Google Drive, Amazon S3, Google Cloud Storage, Confluence, Slack 채널, Swagger/OpenAPI 스펙, 등록된 웹 페이지, Tavily 기반 웹 검색을 지원합니다.
 
 ### 어떤 파일 형식을 인덱싱할 수 있나요?
 

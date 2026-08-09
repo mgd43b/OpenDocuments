@@ -108,7 +108,7 @@ The `init` wizard now:
 
 Store the initial key in a password manager. Browser sign-in exchanges it for an HttpOnly, SameSite session cookie; the Web UI does not keep the key in local storage.
 
-Connector tokens entered in the Web UI are used by the current runtime but are not written to connector JSON. For restart-safe credentials, set provider environment variables such as `GITHUB_TOKEN`, `NOTION_TOKEN`, `GDRIVE_ACCESS_TOKEN`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_TOKEN`.
+Connector tokens entered in the Web UI are used by the current runtime but are not written to connector JSON. For restart-safe credentials, set provider environment variables such as `GITHUB_TOKEN`, `NOTION_TOKEN`, `GDRIVE_ACCESS_TOKEN`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `CONFLUENCE_EMAIL`, `CONFLUENCE_TOKEN`, and `SLACK_TOKEN`.
 
 `security.storage.encryptAtRest` is not a cosmetic flag: the server refuses to start when it is enabled because application-level database encryption is not implemented. Use an encrypted host disk or encrypted persistent volume.
 

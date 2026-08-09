@@ -218,7 +218,7 @@ export async function syncGitHubConnector(): Promise<{ result: {
 }
 
 export async function connectSourceConnector(input: {
-  type: 'notion' | 'gdrive' | 's3' | 'confluence' | 'swagger' | 'web-crawler'
+  type: 'notion' | 'gdrive' | 's3' | 'confluence' | 'slack' | 'swagger' | 'web-crawler'
   name?: string
   config: Record<string, unknown>
   syncInterval?: number

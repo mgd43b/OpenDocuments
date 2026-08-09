@@ -136,6 +136,7 @@ OpenDocuments/
 │   ├── connector-gdrive/           # Google Drive (Drive API v3)
 │   ├── connector-s3/               # S3/GCS (XML/JSON list + download)
 │   ├── connector-confluence/       # Confluence (REST API, HTML-to-text)
+│   ├── connector-slack/            # Slack (Web API, channel transcript rendering)
 │   ├── connector-swagger/          # Swagger/OpenAPI (spec parsing, endpoint chunking)
 │   ├── connector-web-crawler/      # Web crawler (cheerio text extraction)
 │   └── connector-web-search/       # Tavily web search (query-time, not index-time)

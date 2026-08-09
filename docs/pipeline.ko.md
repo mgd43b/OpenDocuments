@@ -97,6 +97,7 @@ Connector는 외부 소스별 차이를 숨기고 공통 raw document 형태로 
 - `plugins/connector-gdrive`
 - `plugins/connector-s3`
 - `plugins/connector-confluence`
+- `plugins/connector-slack`
 - `plugins/connector-web-crawler`
 - `plugins/connector-web-search`
 - `plugins/connector-swagger`

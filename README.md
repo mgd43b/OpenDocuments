@@ -300,6 +300,7 @@ parserFallbacks: {
 | **Google Drive** | Docs, Sheets, Slides, uploaded files | OAuth / Service Account | Polling |
 | **Amazon S3 / Google Cloud Storage** | Any supported format in buckets | AWS / GCP credentials | Polling |
 | **Confluence** | Wiki pages across spaces | API Token + Email | Polling |
+| **Slack** | Public channel messages and thread replies | Bot Token | Polling |
 | **Swagger / OpenAPI** | API endpoints with parameters and schemas | None (public specs) | Manual |
 | **Web Crawler** | Any URL you register | Optional (cookies/headers) | Periodic |
 | **Web Search (Tavily)** | Real-time web results merged into answers | Tavily API Key | Query-time |
@@ -629,7 +630,7 @@ npm run dev      # Watch mode
 | `@opendocuments/client` | TypeScript SDK | 5 |
 | 5 model plugins | Ollama, OpenAI, Anthropic, Google, Grok | 40 |
 | 8 parser plugins | PDF, DOCX, XLSX, HTML, Jupyter, Email, Code, PPTX | 40 |
-| 8 connector plugins | GitHub, Notion, GDrive, S3, Confluence, Swagger, WebCrawler, WebSearch | 42 |
+| 9 connector plugins | GitHub, Notion, GDrive, S3, Confluence, Slack, Swagger, WebCrawler, WebSearch | 60 |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions, test patterns, and plugin development guide.
 
@@ -670,7 +671,7 @@ Yes. When configured with Ollama and local embedding models, OpenDocuments can r
 
 ### What data sources does OpenDocuments support?
 
-OpenDocuments supports local files, file uploads, GitHub, Notion, Google Drive, Amazon S3, Google Cloud Storage, Confluence, Swagger/OpenAPI specs, registered web pages, and Tavily-backed web search.
+OpenDocuments supports local files, file uploads, GitHub, Notion, Google Drive, Amazon S3, Google Cloud Storage, Confluence, Slack channels, Swagger/OpenAPI specs, registered web pages, and Tavily-backed web search.
 
 ### What file formats can OpenDocuments index?
 

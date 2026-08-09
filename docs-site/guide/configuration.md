@@ -33,6 +33,7 @@ export default defineConfig({
     { type: 'notion', token: process.env.NOTION_TOKEN },
     { type: 'gdrive', credentials: process.env.GDRIVE_CREDENTIALS },
     { type: 'confluence', baseUrl: 'https://wiki.company.com', token: process.env.CONFLUENCE_TOKEN },
+    { type: 'slack', token: process.env.SLACK_TOKEN, channels: ['#engineering', '#support'] },
     { type: 'web-crawler', urls: ['https://docs.example.com'] },
   ],
 
@@ -125,6 +126,7 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GITHUB_TOKEN=ghp_...
 NOTION_TOKEN=ntn_...
+SLACK_TOKEN=xoxb-...       # Slack bot token (channels:read, channels:history)
 TAVILY_API_KEY=tvly-...    # For web search integration
 ```
 

@@ -20,6 +20,7 @@
     "@opendocuments/connector-github": "*",
     "@opendocuments/connector-notion": "*",
     "@opendocuments/connector-s3": "*",
+    "@opendocuments/connector-slack": "*",
     "@opendocuments/connector-swagger": "*",
     "@opendocuments/connector-web-crawler": "*",
     "@opendocuments/connector-web-search": "*",
