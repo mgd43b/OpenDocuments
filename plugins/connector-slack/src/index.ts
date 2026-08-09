@@ -25,8 +25,10 @@ export interface SlackConfig {
   channels?: string[] | string
   /** Seconds between syncs. Consumed by the connector manager, not by this plugin. */
   syncInterval?: number
-  /** Newest messages read per channel. Defaults to 1000. */
+  /** Newest top-level messages read per channel. Defaults to 1000. */
   maxMessages?: number
+  /** Thread replies read per channel, across all threads. Defaults to `maxMessages`. */
+  maxThreadReplies?: number
   /**
    * Append thread replies under their parent message. Defaults to true.
    * Turning it off lets a sync skip channels whose newest message is unchanged,
@@ -41,6 +43,7 @@ interface SlackChannel {
   topic?: { value?: string }
   purpose?: { value?: string }
   num_members?: number
+  is_member?: boolean
 }
 
 interface SlackUser {
@@ -80,6 +83,8 @@ const DEFAULT_MAX_MESSAGES = 1000
 const MAX_RETRIES = 3
 const DEFAULT_RETRY_DELAY_MS = 1000
 const MAX_RETRY_DELAY_MS = 30_000
+/** How long a failed user-directory read is remembered before it is retried. */
+const USER_DIRECTORY_RETRY_MS = 5 * 60_000
 
 /** Membership churn carries no retrievable content. */
 const SKIPPED_SUBTYPES = new Set([
@@ -104,9 +109,11 @@ export class SlackConnector implements ConnectorPlugin {
   private token = ''
   private channelFilter: string[] = []
   private maxMessages = DEFAULT_MAX_MESSAGES
+  private maxThreadReplies = DEFAULT_MAX_MESSAGES
   private includeThreads = true
   private userNames = new Map<string, string>()
   private userDirectoryLoaded = false
+  private userDirectoryRetryAfter = 0
   private log?: PluginContext['log']
 
   async setup(ctx: PluginContext): Promise<void> {
@@ -114,15 +121,20 @@ export class SlackConnector implements ConnectorPlugin {
     this.token = config.token || process.env.SLACK_TOKEN || ''
     this.channelFilter = normalizeChannels(config.channels)
     this.maxMessages = positiveInt(config.maxMessages, DEFAULT_MAX_MESSAGES)
+    this.maxThreadReplies = positiveInt(config.maxThreadReplies, this.maxMessages)
     this.includeThreads = config.includeThreads !== false
     this.log = ctx.log
-    this.userNames.clear()
-    this.userDirectoryLoaded = false
+    this.resetUserDirectory()
   }
 
   async teardown(): Promise<void> {
+    this.resetUserDirectory()
+  }
+
+  private resetUserDirectory(): void {
     this.userNames.clear()
     this.userDirectoryLoaded = false
+    this.userDirectoryRetryAfter = 0
   }
 
   async healthCheck(): Promise<HealthStatus> {
@@ -137,6 +149,8 @@ export class SlackConnector implements ConnectorPlugin {
 
   async *discover(): AsyncIterable<DiscoveredDocument> {
     let cursor: string | undefined
+    const matchedFilters = new Set<string>()
+    const notMember: string[] = []
 
     do {
       const data = await this.slackFetch('conversations.list', {
@@ -147,7 +161,18 @@ export class SlackConnector implements ConnectorPlugin {
       })
 
       for (const channel of data.channels || []) {
-        if (!channel.id || !this.matchesFilter(channel)) continue
+        if (!channel.id) continue
+
+        const matched = this.matchedFilter(channel)
+        if (matched === null) continue
+        if (matched) matchedFilters.add(matched)
+
+        // conversations.list returns every public channel, but conversations.history
+        // only works where the token's app is a member.
+        if (channel.is_member === false) {
+          notMember.push(channel.name ? `#${channel.name}` : channel.id)
+          continue
+        }
 
         yield {
           sourceId: channel.id,
@@ -166,6 +191,29 @@ export class SlackConnector implements ConnectorPlugin {
 
       cursor = data.response_metadata?.next_cursor || undefined
     } while (cursor)
+
+    this.reportDiscoveryGaps(matchedFilters, notMember)
+  }
+
+  /**
+   * A sync that indexes nothing looks identical to an empty workspace, so say
+   * which configured channels were never seen and where the app needs inviting.
+   */
+  private reportDiscoveryGaps(matchedFilters: Set<string>, notMember: string[]): void {
+    const unmatched = this.channelFilter.filter(entry => !matchedFilters.has(entry))
+    if (unmatched.length > 0) {
+      this.log?.fail(
+        `Slack: no channel matches ${unmatched.map(entry => `#${entry}`).join(', ')}; ` +
+        'check the names in the connector config'
+      )
+    }
+    if (notMember.length > 0) {
+      this.log?.info(
+        `Slack: skipped ${notMember.length} channel(s) the app has not joined ` +
+        `(${notMember.slice(0, 5).join(', ')}${notMember.length > 5 ? ', ...' : ''}); ` +
+        'run /invite in each channel to index it'
+      )
+    }
   }
 
   async fetch(ref: DocumentRef): Promise<RawDocument> {
@@ -183,19 +231,36 @@ export class SlackConnector implements ConnectorPlugin {
     lines.push('')
 
     let replyCount = 0
+    let replyBudget = this.maxThreadReplies
+    let repliesTruncated = false
+
     for (const message of messages) {
       const rendered = this.renderMessage(message)
       if (rendered) lines.push(rendered)
 
       const threadTs = message.ts
       if (!this.includeThreads || !threadTs || !isThreadParent(message)) continue
+      if (replyBudget <= 0) {
+        repliesTruncated = true
+        continue
+      }
 
-      for (const reply of await this.threadReplies(channelId, threadTs)) {
+      const thread = await this.threadReplies(channelId, threadTs, replyBudget)
+      replyBudget -= thread.replies.length
+      if (thread.truncated) repliesTruncated = true
+
+      for (const reply of thread.replies) {
         const renderedReply = this.renderMessage(reply, true)
         if (!renderedReply) continue
         lines.push(renderedReply)
         replyCount++
       }
+    }
+
+    if (repliesTruncated) {
+      this.log?.info(
+        `Slack: ${channelId} thread replies truncated at ${this.maxThreadReplies} (maxThreadReplies)`
+      )
     }
 
     return {
@@ -265,35 +330,48 @@ export class SlackConnector implements ConnectorPlugin {
     return messages
   }
 
-  private async threadReplies(channelId: string, threadTs: string): Promise<SlackMessage[]> {
+  /** Reads up to `budget` replies so one very long thread cannot run unbounded. */
+  private async threadReplies(
+    channelId: string,
+    threadTs: string,
+    budget: number
+  ): Promise<{ replies: SlackMessage[]; truncated: boolean }> {
     const replies: SlackMessage[] = []
+    let read = 0
     let cursor: string | undefined
 
     do {
       const data = await this.slackFetch('conversations.replies', {
         channel: channelId,
         ts: threadTs,
-        limit: PAGE_SIZE,
+        limit: Math.min(PAGE_SIZE, budget - read),
         cursor,
       })
 
-      for (const message of data.messages || []) {
+      const page = data.messages || []
+      read += page.length
+      for (const message of page) {
         // The parent message is echoed back as the first reply.
         if (message.ts === threadTs || isSkippable(message)) continue
         replies.push(message)
       }
 
       cursor = data.response_metadata?.next_cursor || undefined
-    } while (cursor)
+    } while (cursor && read < budget)
 
-    return replies
+    return { replies, truncated: Boolean(cursor) }
   }
 
-  /** Maps user IDs to display names once per sync; raw IDs are the fallback. */
+  /**
+   * Maps user IDs to display names. A failure is remembered only briefly, so a
+   * transient outage costs one sync's author names rather than every sync until
+   * the process restarts, while a missing `users:read` scope still cannot turn
+   * into one failed request per channel.
+   */
   private async loadUserDirectory(): Promise<void> {
-    if (this.userDirectoryLoaded) return
-    this.userDirectoryLoaded = true
+    if (this.userDirectoryLoaded || Date.now() < this.userDirectoryRetryAfter) return
 
+    const names = new Map<string, string>()
     let cursor: string | undefined
     try {
       do {
@@ -301,13 +379,23 @@ export class SlackConnector implements ConnectorPlugin {
         for (const member of data.members || []) {
           if (!member.id) continue
           const name = member.profile?.display_name || member.real_name || member.profile?.real_name || member.name
-          if (name) this.userNames.set(member.id, name)
+          if (name) names.set(member.id, name)
         }
         cursor = data.response_metadata?.next_cursor || undefined
       } while (cursor)
     } catch (err) {
-      this.log?.info(`Slack: user directory unavailable (${(err as Error).message}); showing raw user IDs`)
+      this.userDirectoryRetryAfter = Date.now() + USER_DIRECTORY_RETRY_MS
+      this.log?.info(
+        `Slack: user directory unavailable (${(err as Error).message}); ` +
+        'showing raw user IDs and retrying in 5 minutes'
+      )
+      return
     }
+
+    // Swapped in only on a complete read, so a mid-pagination failure cannot
+    // leave a half-populated directory behind.
+    this.userNames = names
+    this.userDirectoryLoaded = true
   }
 
   private renderMessage(message: SlackMessage, isReply = false): string {
@@ -341,11 +429,16 @@ export class SlackConnector implements ConnectorPlugin {
       .trim()
   }
 
-  private matchesFilter(channel: SlackChannel): boolean {
-    if (this.channelFilter.length === 0) return true
+  /**
+   * The configured entry this channel matches: `null` when it is filtered out,
+   * an empty string when no filter is configured, otherwise the matching entry
+   * so unmatched configuration can be reported.
+   */
+  private matchedFilter(channel: SlackChannel): string | null {
+    if (this.channelFilter.length === 0) return ''
     const name = (channel.name || '').toLowerCase()
     const id = (channel.id || '').toLowerCase()
-    return this.channelFilter.includes(name) || this.channelFilter.includes(id)
+    return this.channelFilter.find(entry => entry === name || entry === id) ?? null
   }
 
   /**
@@ -383,9 +476,11 @@ export class SlackConnector implements ConnectorPlugin {
 }
 
 function normalizeChannels(channels: string[] | string | undefined): string[] {
+  // Split on whitespace as well as commas: "#eng #support" reads naturally and
+  // would otherwise become one entry that matches nothing.
   const list = Array.isArray(channels)
-    ? channels
-    : typeof channels === 'string' ? channels.split(/[\n,]/) : []
+    ? channels.flatMap(entry => entry.split(/[\s,]+/))
+    : typeof channels === 'string' ? channels.split(/[\s,]+/) : []
   return list
     .map(channel => channel.trim().replace(/^#/, '').toLowerCase())
     .filter(Boolean)
@@ -421,7 +516,11 @@ function messageText(message: SlackMessage): string {
 function formatTimestamp(ts: string | undefined): string {
   const seconds = Number(ts)
   if (!Number.isFinite(seconds)) return 'unknown time'
-  return new Date(seconds * 1000).toISOString()
+  // A finite but out-of-range value still builds an Invalid Date, whose
+  // toISOString() throws and would take the whole channel down with it.
+  const date = new Date(seconds * 1000)
+  if (Number.isNaN(date.getTime())) return 'unknown time'
+  return date.toISOString()
 }
 
 function retryDelayMs(res: Response): number {

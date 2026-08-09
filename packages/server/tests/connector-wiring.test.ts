@@ -26,6 +26,8 @@ describe('connector wiring', () => {
     }
   })
 
+  // Importing these requires their build output, which turbo only produces
+  // because they are devDependencies of this package.
   it('resolves each mapped package to a connector plugin', async () => {
     for (const packageName of new Set(Object.values(CONNECTOR_PLUGINS_MAP))) {
       const mod = await import(packageName) as { default?: new () => { type?: string } }

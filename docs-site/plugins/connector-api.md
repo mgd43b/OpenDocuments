@@ -96,5 +96,5 @@ export default class GitHubConnector implements ConnectorPlugin {
 
 - `connector-github` (90 lines) - REST API, auth, pagination
 - `connector-notion` (120 lines) - Search API, block conversion
-- `connector-slack` (390 lines) - Web API, throttling retries, transcript rendering
+- `connector-slack` - Web API, throttling retries, bounded pagination, transcript rendering
 - `connector-web-crawler` (80 lines) - Simple URL fetching

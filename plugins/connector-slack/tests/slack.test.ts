@@ -123,6 +123,63 @@ describe('SlackConnector', () => {
     expect((await connector.healthCheck()).healthy).toBe(true)
   })
 
+  it('skips channels the app has not joined', async () => {
+    mockSlack({
+      'conversations.list': {
+        ok: true,
+        channels: [
+          { id: 'C1', name: 'general', is_member: true },
+          { id: 'C2', name: 'random', is_member: false },
+          { id: 'C3', name: 'design' },
+        ],
+      },
+    })
+
+    const connector = await connect()
+    const docs = []
+    for await (const doc of connector.discover()) docs.push(doc)
+
+    // is_member: false cannot be read by conversations.history; a missing flag
+    // is treated as readable so an unexpected payload does not drop channels.
+    expect(docs.map(doc => doc.sourceId)).toEqual(['C1', 'C3'])
+  })
+
+  it('reports configured channels that match nothing', async () => {
+    const messages: string[] = []
+    mockSlack({ 'conversations.list': { ok: true, channels: [{ id: 'C1', name: 'general', is_member: true }] } })
+
+    const connector = new SlackConnector()
+    await connector.setup({
+      config: { token: 'xoxb-test', channels: ['general', 'genral'] } as unknown as Record<string, unknown>,
+      dataDir: '/tmp',
+      log: { ok: () => {}, fail: (msg: string) => messages.push(msg), info: () => {}, wait: () => {} },
+    })
+    for await (const _doc of connector.discover()) { /* consume */ }
+
+    // Only the typo is reported; the channel that matched is not.
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toContain('no channel matches #genral;')
+  })
+
+  it('splits a whitespace separated channel string', async () => {
+    mockSlack({
+      'conversations.list': {
+        ok: true,
+        channels: [
+          { id: 'C1', name: 'engineering', is_member: true },
+          { id: 'C2', name: 'support', is_member: true },
+          { id: 'C3', name: 'random', is_member: true },
+        ],
+      },
+    })
+
+    const connector = await connect({ token: 'xoxb-test', channels: '#engineering #support' })
+    const docs = []
+    for await (const doc of connector.discover()) docs.push(doc)
+
+    expect(docs.map(doc => doc.sourceId)).toEqual(['C1', 'C2'])
+  })
+
   it('discovers channels across cursor pages', async () => {
     mockSlack({
       'conversations.list': (params) => params.get('cursor') === 'page2'
@@ -303,6 +360,89 @@ describe('SlackConnector', () => {
     const content = (await connector.fetch({ sourceId: 'C1', sourcePath: 'slack://C1' })).content as string
 
     expect(content).toContain('U1: Hello')
+  })
+
+  it('does not retry a failed user directory on every channel', async () => {
+    let directoryCalls = 0
+    mockSlack({
+      'conversations.info': CHANNEL_INFO,
+      'users.list': () => {
+        directoryCalls++
+        return { ok: false, error: 'ratelimited' }
+      },
+      'conversations.history': { ok: true, messages: [{ user: 'U1', text: 'Hello', ts: '1700000200.000100' }] },
+    })
+
+    const connector = await connect()
+    await connector.fetch({ sourceId: 'C1', sourcePath: 'slack://C1' })
+    await connector.fetch({ sourceId: 'C2', sourcePath: 'slack://C2' })
+
+    expect(directoryCalls).toBe(1)
+  })
+
+  it('recovers author names after the user directory cooldown', async () => {
+    vi.useFakeTimers()
+    try {
+      let directoryHealthy = false
+      mockSlack({
+        'conversations.info': CHANNEL_INFO,
+        'users.list': () => (directoryHealthy ? USERS : { ok: false, error: 'ratelimited' }),
+        'conversations.history': { ok: true, messages: [{ user: 'U1', text: 'Hello', ts: '1700000200.000100' }] },
+      })
+
+      const connector = await connect()
+      const degraded = (await connector.fetch({ sourceId: 'C1', sourcePath: 'slack://C1' })).content as string
+      expect(degraded).toContain('U1: Hello')
+
+      // A transient failure must not latch for the lifetime of the process.
+      directoryHealthy = true
+      vi.advanceTimersByTime(5 * 60_000 + 1)
+      const recovered = (await connector.fetch({ sourceId: 'C1', sourcePath: 'slack://C1' })).content as string
+      expect(recovered).toContain('alice: Hello')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('caps thread replies with maxThreadReplies', async () => {
+    mockSlack({
+      'conversations.info': CHANNEL_INFO,
+      'users.list': USERS,
+      'conversations.history': HISTORY,
+      'conversations.replies': (params) => ({
+        ok: true,
+        messages: Array.from({ length: Number(params.get('limit')) }, (_unused, index) => ({
+          user: 'U2',
+          text: `Reply ${index}`,
+          ts: `17000001${String(index).padStart(2, '0')}.000300`,
+          thread_ts: PARENT_TS,
+        })),
+        response_metadata: { next_cursor: 'more' },
+      }),
+    })
+
+    const connector = await connect({ token: 'xoxb-test', maxThreadReplies: 2 })
+    const raw = await connector.fetch({ sourceId: 'C1', sourcePath: 'slack://C1' })
+
+    expect(raw.metadata?.replyCount).toBe(2)
+    expect(methodCalls('conversations.replies')).toHaveLength(1)
+    expect(methodCalls('conversations.replies')[0].params.get('limit')).toBe('2')
+  })
+
+  it('renders an out-of-range timestamp instead of throwing', async () => {
+    mockSlack({
+      'conversations.info': CHANNEL_INFO,
+      'users.list': USERS,
+      'conversations.history': {
+        ok: true,
+        messages: [{ user: 'U1', text: 'Bad clock', ts: '99999999999999999' }],
+      },
+    })
+
+    const connector = await connect()
+    const content = (await connector.fetch({ sourceId: 'C1', sourcePath: 'slack://C1' })).content as string
+
+    expect(content).toContain('[unknown time] alice: Bad clock')
   })
 
   it('stops paginating history at maxMessages', async () => {

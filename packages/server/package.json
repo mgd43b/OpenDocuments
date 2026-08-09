@@ -26,6 +26,14 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "2.0.0-beta.5",
+    "@opendocuments/connector-confluence": "*",
+    "@opendocuments/connector-gdrive": "*",
+    "@opendocuments/connector-github": "*",
+    "@opendocuments/connector-notion": "*",
+    "@opendocuments/connector-s3": "*",
+    "@opendocuments/connector-slack": "*",
+    "@opendocuments/connector-swagger": "*",
+    "@opendocuments/connector-web-crawler": "*",
     "typescript": "^5.5.0",
     "vitest": "^4.1.10"
   },

@@ -33,6 +33,7 @@ export default defineConfig({
     { type: 'notion', token: process.env.NOTION_TOKEN },
     { type: 'gdrive', credentials: process.env.GDRIVE_CREDENTIALS },
     { type: 'confluence', baseUrl: 'https://wiki.company.com', token: process.env.CONFLUENCE_TOKEN },
+    // Only channels the Slack app has joined are readable - run /invite in each one.
     { type: 'slack', token: process.env.SLACK_TOKEN, channels: ['#engineering', '#support'] },
     { type: 'web-crawler', urls: ['https://docs.example.com'] },
   ],

@@ -301,7 +301,7 @@ parserFallbacks: {
 | **Google Drive** | Docs, Sheets, Slides, uploaded files | OAuth / Service Account | Polling |
 | **Amazon S3 / Google Cloud Storage** | Any supported format in buckets | AWS / GCP credentials | Polling |
 | **Confluence** | Wiki pages across spaces | API Token + Email | Polling |
-| **Slack** | Public channel messages and thread replies | Bot Token | Polling |
+| **Slack** | Messages and thread replies in channels the app has joined | Bot Token | Polling |
 | **Swagger / OpenAPI** | API endpoints with parameters and schemas | None (public specs) | Manual |
 | **Web Crawler** | Any URL you register | Optional (cookies/headers) | Periodic |
 | **Web Search (Tavily)** | Real-time web results merged into answers | Tavily API Key | Query-time |
@@ -631,7 +631,7 @@ npm run dev      # Watch mode
 | `@opendocuments/client` | TypeScript SDK | 5 |
 | 5 model plugins | Ollama, OpenAI, Anthropic, Google, Grok | 40 |
 | 8 parser plugins | PDF, DOCX, XLSX, HTML, Jupyter, Email, Code, PPTX | 40 |
-| 9 connector plugins | GitHub, Notion, GDrive, S3, Confluence, Slack, Swagger, WebCrawler, WebSearch | 60 |
+| 9 connector plugins | GitHub, Notion, GDrive, S3, Confluence, Slack, Swagger, WebCrawler, WebSearch | 67 |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions, test patterns, and plugin development guide.
 
