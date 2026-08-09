@@ -87,6 +87,7 @@ In short: **OpenDocuments is a private AI search engine for your organization's 
 | **OpenDocuments vs local-only scripts** | A production-oriented system with team mode, API access, syncable connectors, backups, and admin tooling |
 
 ### Recent Improvements
+- **Slack connector**: Index public channels as searchable transcripts, with thread replies, resolved author names, and rate-limit-aware syncing
 - **RAG accuracy overhaul**: Structure-preserving chunking, contextual prefixes, HyDE + multi-query retrieval, parent-document recall, proposition augmentation, reranking, and adaptive context fitting
 - **Workspace-scoped team mode**: Admin/chat/document APIs stay inside the authenticated workspace, with shared conversation links plus session and API-key auth support
 - **Backup & restore CLI**: Snapshot SQLite + LanceDB data and recover an instance with one command
@@ -624,7 +625,7 @@ npm run dev      # Watch mode
 | Package | Role | Tests |
 |---------|------|-------|
 | `@opendocuments/core` | Plugin system, RAG engine, ingest pipeline, storage, auth, security | 437 |
-| `@opendocuments/server` | HTTP API (Hono), MCP server, auth middleware, widget | 75 |
+| `@opendocuments/server` | HTTP API (Hono), MCP server, auth middleware, widget | 79 |
 | `@opendocuments/cli` | 20 CLI commands (Commander.js) | 9 |
 | `@opendocuments/web` | React SPA with 9 pages (Vite + Tailwind) | -- |
 | `@opendocuments/client` | TypeScript SDK | 5 |

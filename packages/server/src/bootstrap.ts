@@ -99,6 +99,24 @@ function normalizePluginPackageName(name: string): string {
   return LEGACY_PLUGIN_PACKAGE_MAP[name] ?? name
 }
 
+/**
+ * Connector type -> package mapping. A connector is only reachable from config,
+ * the CLI, or the admin API once it is listed here.
+ */
+export const CONNECTOR_PLUGINS_MAP: Record<string, string> = {
+  github: '@opendocuments/connector-github',
+  notion: '@opendocuments/connector-notion',
+  'web-crawler': '@opendocuments/connector-web-crawler',
+  'gdrive': '@opendocuments/connector-gdrive',
+  'google-drive': '@opendocuments/connector-gdrive',
+  's3': '@opendocuments/connector-s3',
+  'gcs': '@opendocuments/connector-s3',
+  'confluence': '@opendocuments/connector-confluence',
+  'slack': '@opendocuments/connector-slack',
+  'swagger': '@opendocuments/connector-swagger',
+  'openapi': '@opendocuments/connector-swagger',
+}
+
 const EMBEDDING_DIMENSIONS: Record<string, number> = {
   ollama: 1024,
   openai: 1536,
@@ -770,21 +788,6 @@ export async function bootstrap(opts: BootstrapOptions = {}): Promise<AppContext
         log.fail(`Automatic purge failed: ${error instanceof Error ? error.message : String(error)}`)
       }
     }, PURGE_INTERVAL)
-
-    // Connector type -> package mapping
-    const CONNECTOR_PLUGINS_MAP: Record<string, string> = {
-      github: '@opendocuments/connector-github',
-      notion: '@opendocuments/connector-notion',
-      'web-crawler': '@opendocuments/connector-web-crawler',
-      'gdrive': '@opendocuments/connector-gdrive',
-      'google-drive': '@opendocuments/connector-gdrive',
-      's3': '@opendocuments/connector-s3',
-      'gcs': '@opendocuments/connector-s3',
-      'confluence': '@opendocuments/connector-confluence',
-      'slack': '@opendocuments/connector-slack',
-      'swagger': '@opendocuments/connector-swagger',
-      'openapi': '@opendocuments/connector-swagger',
-    }
 
     const createConnector = async (
       connectorConfig: Record<string, unknown>,

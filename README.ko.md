@@ -88,6 +88,7 @@ OpenDocuments는 **문서 소스에 연결**하고, **각 문서를 파싱 및 �
 
 ### 최근 개선 사항
 
+- **Slack 커넥터**: 공개 채널을 검색 가능한 대화 기록으로 인덱싱하며, 스레드 답글과 작성자 이름 해석, 레이트 리밋 대응 동기화 지원
 - **RAG 정확도 전면 개선**: 구조 보존 청킹, 컨텍스트 접두사, HyDE + 다중 쿼리 검색, 부모 문서 회수, proposition augmentation, 재순위화, 적응형 컨텍스트 피팅
 - **워크스페이스 범위 팀 모드**: 관리자/채팅/문서 API가 인증된 워크스페이스 안에서만 동작하며, 공유 대화 링크와 세션 및 API 키 인증 지원
 - **백업 및 복원 CLI**: SQLite + LanceDB 데이터를 스냅샷으로 저장하고 한 명령으로 인스턴스 복구
@@ -630,7 +631,7 @@ npm run dev      # Watch mode
 | 패키지                  | 역할                                                                   | 테스트 |
 | ----------------------- | ---------------------------------------------------------------------- | ------ |
 | `@opendocuments/core`   | 플러그인 시스템, RAG 엔진, ingest pipeline, storage, auth, security    | 437    |
-| `@opendocuments/server` | HTTP API(Hono), MCP 서버, auth middleware, widget                      | 75     |
+| `@opendocuments/server` | HTTP API(Hono), MCP 서버, auth middleware, widget                      | 79     |
 | `@opendocuments/cli`    | 20개 CLI 명령어(Commander.js)                                          | 9      |
 | `@opendocuments/web`    | 9개 페이지 React SPA(Vite + Tailwind)                                  | --     |
 | `@opendocuments/client` | TypeScript SDK                                                         | 5      |

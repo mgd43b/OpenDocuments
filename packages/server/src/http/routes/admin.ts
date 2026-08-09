@@ -8,7 +8,12 @@ import { dirname } from 'node:path'
 const GITHUB_REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
 const GITHUB_BRANCH_PATTERN = /^[A-Za-z0-9._/-]+$/
 const CONNECTOR_NAME_PATTERN = /^[A-Za-z0-9._-]{1,80}$/
-const CONFIGURABLE_CONNECTOR_TYPES = new Set([
+/**
+ * Connector types the admin API will build from a posted config. Every entry
+ * must also exist in `CONNECTOR_PLUGINS_MAP`; `github` is excluded because it
+ * has its own dedicated route.
+ */
+export const CONFIGURABLE_CONNECTOR_TYPES = new Set([
   'notion',
   'gdrive',
   's3',
